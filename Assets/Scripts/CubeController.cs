@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class CubeController : MonoBehaviour
 {
+    public int x, y, z;
     [SerializeField] GameObject[] effectPrefabs;
     bool isMoving = false;
     [SerializeField] float speedFactor;

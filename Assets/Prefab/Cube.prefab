@@ -105,7 +105,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   effectPrefabs:
-  - {fileID: 199484, guid: 6342aa40288f1e6428833aed83823123, type: 3}
-  - {fileID: 199484, guid: 735925201e266ef4a989259c2a55e906, type: 3}
-  - {fileID: 199484, guid: ae4a5aa8524dc2940a238c23c86e842d, type: 3}
-  speedFactor: 1
+  - {fileID: 198276, guid: f50d911205b6fc84a9498442d9d265f9, type: 3}
+  speedFactor: 0.5
