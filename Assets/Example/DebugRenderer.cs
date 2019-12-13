@@ -6,8 +6,12 @@ namespace Urg
 {
     public class DebugRenderer : MonoBehaviour
     {
+        public bool flipX;
+        public bool flipY;
+        public Material lineMaterial;
+        public GameObject screen;
         public UrgSensor urg;
-        const float maxDis = 2.8f;
+        public float maxDis = 10f;
         private float[] distances;
         private List<DetectedLocation> locations = new List<DetectedLocation>();
         private AffineConverter affineConverter;
@@ -18,6 +22,9 @@ namespace Urg
         public float xSize;
         public float ySize;
         public float yOffset;
+        public float xOffset;
+
+        public GameObject LineParent;
 
         public GameObject playerPrefab;
         List<GameObject> players;
@@ -69,20 +76,35 @@ namespace Urg
         private void Start()
         {
             screenHeight = canvas.GetComponent<RectTransform>().rect.height;
+            //screenHeight = Screen.currentResolution.height;
             screenWidth = canvas.GetComponent<RectTransform>().rect.width;
+            //screenWidth = Screen.currentResolution.width;
         }
 
         void Update()
         {
+            screen.transform.localScale = new Vector3(ySize, xSize);
+            screen.transform.position = new Vector3((ySize / 2)+yOffset, screen.transform.position.y, -xOffset);
             if (urg == null)
             {
                 return;
             }
 
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                foreach (Transform child in LineParent.transform)
+                {
+                    Destroy(child.gameObject);
+                }
+            }
+            foreach (Transform child in LineParent.transform)
+            {
+                Destroy(child.gameObject);
+            }
+            int setCount = 0;
 
             if (distances != null && distances.Length > 0)
             {
-                bool isLastOneRendered = false;
                 List<int> set = new List<int>();
                 for (int i = 0; i < distances.Length; i++)
                 {
@@ -93,80 +115,83 @@ namespace Urg
                     var sin = Mathf.Sin(angle);
                     var dir = new Vector3(cos, 0, sin);
                     var pos = distance * dir;
-                    if (distances[i] < maxDis && degree >= -90 && degree <= 90 )
+                    
+                    if(degree >= -90 && degree <= 90)
                     {
-                        //Debug.Log("angle: " + angle);
-                        set.Add(i);
-                        //if(!isLastOneRendered)
-                        //    Debug.DrawRay(urg.transform.position, pos, Color.blue);
-                        //isLastOneRendered = true;
-                    }
-                    else
-                    {
-                        if(set.Count > 1)
+
+                        Color color = distance < maxDis ? Color.blue : Color.red;
+                        DrawLine(urg.transform.position, pos, color);
+                        //Gizmos.color = Color.blue;
+
+                        if (distance < maxDis)
                         {
-                            //find middle of touch
-                            int median = Mathf.RoundToInt((set[0] + set[set.Count - 1]) / 2);
-
-                            float distanceRen = distances[median];
-                            float angleRen = urg.StepAngleRadians * median + urg.OffsetRadians;
-                            var cosRen = Mathf.Cos(angleRen);
-                            var sinRen = Mathf.Sin(angleRen);
-                            var dirRen = new Vector3(cosRen, 0, sinRen);
-                            var posRen = distance * dirRen;
-
-                            DetectedLocation location = new DetectedLocation(median, angleRen, distanceRen);
-
-                            touchCount++;
-                            //Debug.Log("xy : " + location.ToScreenSpace(xSize, ySize, screenWidth, screenHeight, yOffset) + "degree:" + location.degree);
-                            if(players.Count < touchCount)
-                            {
-                                GameObject player = Instantiate(playerPrefab);
-                                players.Add(player);
-                                player.transform.SetParent(canvas.transform);
-                            }
-                            players[touchCount-1].GetComponent<RectTransform>().position = location.ToScreenSpace(xSize, ySize, screenWidth, screenHeight, yOffset);
-                                
-
-                                
-                            Debug.DrawRay(urg.transform.position, posRen, Color.blue);
+                            set.Add(i);
                         }
-                        //isLastOneRendered = false;
-                        set.Clear();
-                    }
-                        
-                        
-                }
-                if(touchCount < players.Count)
-                {
-                    while(touchCount < players.Count)
-                    {
-                        players[touchCount].GetComponent<RectTransform>().position = hidePlayerPos;
+                        else
+                        {
+                            if (set.Count > 1)
+                            {
+                                setCount++;
+                                //find middle of touch
+                                int median = Mathf.RoundToInt((set[0] + set[set.Count - 1]) / 2);
 
-                        touchCount++;
+                                float distanceRen = distances[median];
+                                float angleRen = urg.StepAngleRadians * median + urg.OffsetRadians;
+                                var cosRen = Mathf.Cos(angleRen);
+                                var sinRen = Mathf.Sin(angleRen);
+                                var dirRen = new Vector3(cosRen, 0, sinRen);
+                                var posRen = distance * dirRen;
+                                Debug.DrawRay(urg.transform.position, distanceRen*dirRen, Color.blue);
+                                DetectedLocation location = new DetectedLocation(median, angleRen, distanceRen);
+                                //Debug.Log("location" + median+"degree"+location.degree+"actual"+location.ToActualSpace()+"screen"+ location.ToScreenSpace(xSize, ySize, screenWidth, screenHeight, yOffset, xOffset));
+                                touchCount++;
+                                //Debug.Log("xy : " + location.ToScreenSpace(xSize, ySize, screenWidth, screenHeight, yOffset) + "degree:" + location.degree);
+                                if (players.Count < touchCount)
+                                {
+                                    GameObject player = Instantiate(playerPrefab);
+                                    players.Add(player);
+                                    player.transform.SetParent(canvas.transform);
+                                }
+                                players[touchCount - 1].GetComponent<RectTransform>().localPosition = location.ToScreenSpace(xSize, ySize, screenWidth, screenHeight, yOffset, xOffset,flipX,flipY);
+
+                            }
+                            set.Clear();
+                        }
                     }
+                    
+                        
+                        
                 }
+
+                while(touchCount < players.Count)
+                {
+                    players[touchCount].GetComponent<RectTransform>().position = hidePlayerPos;
+
+                    touchCount++;
+                }
+
                 touchCount = 0;
             }
 
-            var locs = this.locations;
-            int index = 0;
-            foreach (var loc in locs)
-            {
-                Vector3 worldPos = new Vector3(0, 0, 0);
-                var inRegion = affineConverter.Sensor2WorldPosition(loc.ToPosition2D(), out worldPos);
-                if (inRegion && index < debugObjects.Count)
-                {
-                    //Gizmos.DrawCube(worldPos, new Vector3(0.1f, 0.1f, 0.1f));
-                    //debugObjects[index].transform.position = worldPos;
-                    index++;
-                }
-            }
+            //var locs = this.locations;
+            //int index = 0;
+            //foreach (var loc in locs)
+            //{
+            //    Vector3 worldPos = new Vector3(0, 0, 0);
+            //    var inRegion = affineConverter.Sensor2WorldPosition(loc.ToPosition2D(), out worldPos);
+            //    if (inRegion && index < debugObjects.Count)
+            //    {
+            //        //Gizmos.DrawCube(worldPos, new Vector3(0.1f, 0.1f, 0.1f));
+            //        //debugObjects[index].transform.position = worldPos;
+            //        index++;
+            //    }
+            //}
 
-            for (var i = index; i < debugObjects.Count; i++)
-            {
-                debugObjects[i].transform.position = new Vector3(100, 100, 100);
-            }
+            //for (var i = index; i < debugObjects.Count; i++)
+            //{
+            //    debugObjects[i].transform.position = new Vector3(100, 100, 100);
+            //}
+            Debug.Log("set count" + setCount);
         }
 
         void Urg_OnDistanceReceived(float[] rawDistances)
@@ -192,5 +217,82 @@ namespace Urg
             }
             return Vector3.negativeInfinity;
         }
+
+        void DrawLine(Vector3 start, Vector3 end, Color color)
+        {
+            GameObject myLine = new GameObject();
+            myLine.transform.position = start;
+            myLine.AddComponent<LineRenderer>();
+            LineRenderer lr = myLine.GetComponent<LineRenderer>();
+            //lr.material = new Material(Material.)
+            lr.material = lineMaterial;
+            lr.startColor = color;
+            lr.endColor = color;
+            lr.startWidth = 0.01f;
+            lr.endWidth =0.01f;
+            lr.SetPosition(0, start);
+            lr.SetPosition(1, end);
+
+            myLine.transform.SetParent(LineParent.transform);
+            //GameObject.Destroy(myLine);
+        }
+
+        public UnityEngine.UI.InputField maxDistanceInputField;
+        public UnityEngine.UI.InputField screenWidthInputField;
+        public UnityEngine.UI.InputField screenHeightInputField;
+        public UnityEngine.UI.InputField offsetXInputField;
+        public UnityEngine.UI.InputField offsetYInputField;
+
+        public void SetMaxDistance()
+        {
+            maxDis = float.Parse(maxDistanceInputField.text);
+        }
+
+        public void SetMaxDistance(float val)
+        {
+            maxDis = val;
+        }
+
+        public void SetScreenWidth()
+        {
+            xSize = float.Parse(screenWidthInputField.text);
+        }
+
+        public void SetScreenWidth(float val)
+        {
+            xSize = val;
+        }
+
+        public void SetScreenHeight()
+        {
+            ySize = float.Parse(screenHeightInputField.text);
+        }
+
+        public void SetScreenHeight(float val)
+        {
+            ySize = val;
+        }
+
+        public void SetOffsetX()
+        {
+            xOffset = float.Parse(offsetXInputField.text);
+        }
+
+        public void SetOffsetX(float val)
+        {
+            xOffset = val;
+        }
+
+        public void SetOffsetY()
+        {
+            yOffset = float.Parse(offsetYInputField.text);
+        }
+
+        public void SetOffsetY(float val)
+        {
+            yOffset = val;
+        }
     }
+
+    
 }

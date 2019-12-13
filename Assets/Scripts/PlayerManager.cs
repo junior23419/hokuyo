@@ -25,8 +25,8 @@ public class PlayerManager : MonoBehaviour
                 // do whatever you want
                 if(hit.transform.tag == "Cube" && enemyController.isGameReady)
                 {
-                    
-                    Destroy(hit.transform.gameObject);
+
+                    hit.transform.gameObject.GetComponent<CubeController>().ExplicitDestroy();
                 }
             }
         }
@@ -38,16 +38,6 @@ public class PlayerManager : MonoBehaviour
         {
             Debug.Log("pos:" + pos);
         }
-        Ray ray = camera.ScreenPointToRay(pos);
-        RaycastHit hit;
-        if (Physics.Raycast(ray, out hit))
-        {
-            // the object identified by hit.transform was clicked
-            // do whatever you want
-            if (hit.transform.tag == "Cube" && enemyController.isGameReady)
-            {
-                Destroy(hit.transform.gameObject);
-            }
-        }
+        
     }
 }

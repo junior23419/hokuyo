@@ -41,6 +41,18 @@ public class CubeController : MonoBehaviour
         fx.transform.position = transform.position;
     }
 
+    public void ExplicitDestroy()
+    {
+        //Debug.Log("destroying");
+        //List<GameObject> cubes = enemyController.FindNeighbourCubes(x, y, z);
+        //foreach(GameObject cube in cubes)
+        //{
+        //    Destroy(cube);
+        //}
+        //Debug.Log("neibor size:" + cubes.Count);
+        Destroy(gameObject);
+    }
+
     public void SetTarget(Vector3 val)
     {
         target = val;

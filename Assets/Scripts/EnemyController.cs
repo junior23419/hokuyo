@@ -9,6 +9,7 @@ public class EnemyController : MonoBehaviour
     [SerializeField] GameObject cubePrefab;
     [SerializeField] GameObject center;
     [SerializeField] long size;
+    [SerializeField] GameObject mainCam;
     public bool isGameReady = false;
 
     float xRotateRate = 0;
@@ -80,7 +81,12 @@ public class EnemyController : MonoBehaviour
 
     public void CreateEnemy()
     {
+        isGameReady = false;
         tables = new List<CubeController>[6];
+        for(int i=0;i<tables.Length;i++)
+        {
+            tables[i] = new List<CubeController>();
+        }
         isInitialized = false;
         cubeCount = 0;
         doneCount = 0;
@@ -141,13 +147,14 @@ public class EnemyController : MonoBehaviour
                         float half = size / 2;
                         tar -= new Vector3(half, half, half) * cubeGap;
                         CubeController cubeController = cube.GetComponent<CubeController>();
+                        int side = FindSide(x, y, z);
                         cubeController.x = x;
                         cubeController.y = y;
                         cubeController.z = z;
-
+                        tables[side].Add(cubeController);
 
                         float fluctuateX = Random.Range(-5f, 5f);
-                        cube.transform.localPosition = Camera.main.transform.position + new Vector3(fluctuateX,0,-1);
+                        cube.transform.position = mainCam.transform.position + new Vector3(fluctuateX,0,-1);
                         cubeController.SetTarget(tar);
                         cubeController.StartMove();
                         

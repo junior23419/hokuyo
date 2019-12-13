@@ -14,24 +14,22 @@ namespace Urg
 
         public DetectedLocation(int index, float angle, float distance)
         {
-            //Debug.Log("detect location" + index + " " + angle + " " + distance);
             this.index = index;
             this.angle = angle;
             this.distance = distance;
             this.degree = (angle * 57.2958f)+90;
         }
 
-        public Vector2 ToScreenSpace(float xSize,float ySize,float screenWidth, float screenHeight,float yOffset)
+        public Vector2 ToScreenSpace(float xSize,float ySize,float screenWidth, float screenHeight,float yOffset,float xOffset,bool flipX,bool flipY)
         {
             Vector2 actual = ToActualSpace();
-            float x = ((actual.x / (xSize / 2)) + 1) * (screenWidth / 2);
-            float y = ((actual.y - yOffset) / ySize) * screenHeight;
-            return new Vector2(x, y);
+            float x = (((actual.x - xOffset) / (xSize / 2)) * (screenWidth / 2));
+            float y = (((actual.y - yOffset) / ySize) * screenHeight) - (screenHeight / 2);
+            return new Vector2(flipX?-x:x,flipY?-y:y);
         }
         
         public Vector2 ToActualSpace()
         {
-            //Debug.Log("degree" + degree + "dist: "+distance);
             float x = distance * Mathf.Cos(degree / 57.2958f);
             float y = distance * Mathf.Sin(degree / 57.2958f);
             return new Vector2(x, y);
